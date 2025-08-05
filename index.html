@@ -220,6 +220,27 @@
             color: #666;
             line-height: 1.6;
             margin-bottom: 30px;
+            font-size: 0.95em;
+        }
+
+        .exam-info {
+            background: #e3f2fd;
+            border-left: 4px solid #4facfe;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 0 10px 10px 0;
+        }
+
+        .exam-info h4 {
+            color: #2c3e50;
+            margin-bottom: 8px;
+            font-size: 1em;
+        }
+
+        .exam-info p {
+            color: #555;
+            margin-bottom: 5px;
+            font-size: 0.9em;
         }
 
         .settings {
@@ -269,10 +290,16 @@
             </div>
         </div>
 
-        <!-- スタート画面 -->
         <div id="start-screen" class="start-screen">
             <h2>📚 宅建模擬試験</h2>
             <p>2025年度試験対応<br>権利関係・宅建業法・都市計画法を中心とした実戦的な問題で学習しましょう</p>
+            
+            <div class="exam-info">
+                <h4>🏆 2025年度 本試験情報</h4>
+                <p>📅 試験日：10月19日（日）13:00-15:00</p>
+                <p>📊 出題：50問（権利関係14問・宅建業法20問・法令制限8問・その他8問）</p>
+                <p>🎯 合格ライン：例年35点前後（約70%）</p>
+            </div>
             
             <div class="settings">
                 <div class="setting-item">
@@ -280,7 +307,8 @@
                     <select id="question-count">
                         <option value="5">5問（約9分）</option>
                         <option value="10">10問（約18分）</option>
-                        <option value="20" selected>20問（約35分）</option>
+                        <option value="20">20問（約35分）</option>
+                        <option value="50" selected>50問（本試験形式・120分）</option>
                     </select>
                 </div>
                 
@@ -298,7 +326,6 @@
             <button class="btn" onclick="startQuiz()">📝 試験開始</button>
         </div>
 
-        <!-- 問題画面 -->
         <div id="quiz-screen" style="display: none;">
             <div class="question-container">
                 <div class="question-number" id="question-number">問1</div>
@@ -312,7 +339,6 @@
             </div>
         </div>
 
-        <!-- 結果画面 -->
         <div id="result-screen" class="result-screen">
             <div class="score-display">
                 <h2>📊 試験結果</h2>
@@ -328,8 +354,7 @@
     </div>
 
     <script>
-        // 問題データベース（実際のアプリではもっと多くの問題を含める）
-        const questionDatabase = [
+        var questionDatabase = [
             {
                 id: 1,
                 category: "民法・物権変動",
@@ -394,7 +419,11 @@
                 ],
                 correct: 2,
                 explanation: "事業用定期借地権は居住用建物の建築が禁止されています。"
-            },
+            }
+        ];
+
+        // さらに問題を追加
+        questionDatabase = questionDatabase.concat([
             {
                 id: 6,
                 category: "民法・契約不適合責任",
@@ -459,59 +488,38 @@
                 ],
                 correct: 0,
                 explanation: "代理人の行為能力は問題となりません。本人が行為能力者であれば代理人は未成年者でも構いません。"
-            },
-            // さらに問題を追加...
-            {
-                id: 11,
-                category: "都市計画法・用途地域",
-                question: "第一種低層住居専用地域について正しいものはどれか。",
-                choices: [
-                    "コンビニエンスストアを建築できる",
-                    "小規模な事務所は建築できる",
-                    "住宅、小学校、診療所などが建築できる",
-                    "ファミリーレストランを建築できる"
-                ],
-                correct: 2,
-                explanation: "第一種低層住居専用地域では住宅、小学校、診療所などの建築が可能です。"
-            },
-            {
-                id: 12,
-                category: "宅建業法・37条書面",
-                question: "37条書面について正しいものはどれか。",
-                choices: [
-                    "契約成立前に交付する",
-                    "宅建士の記名押印は不要",
-                    "契約成立後遅滞なく交付する",
-                    "口頭での説明で代替できる"
-                ],
-                correct: 2,
-                explanation: "37条書面は契約成立後遅滞なく交付し、宅建士の記名押印が必要です。"
             }
-        ];
+        ]);
 
-        let currentQuiz = [];
-        let currentQuestionIndex = 0;
-        let userAnswers = [];
-        let startTime;
-        let timerInterval;
-        let selectedQuestionCount = 20;
-        let timeLimit;
+        var currentQuiz = [];
+        var currentQuestionIndex = 0;
+        var userAnswers = [];
+        var startTime;
+        var timerInterval;
+        var selectedQuestionCount = 50;
+        var timeLimit;
 
         function shuffleArray(array) {
-            const shuffled = [...array];
-            for (let i = shuffled.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            var shuffled = array.slice();
+            for (var i = shuffled.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                var temp = shuffled[i];
+                shuffled[i] = shuffled[j];
+                shuffled[j] = temp;
             }
             return shuffled;
         }
 
         function startQuiz() {
             selectedQuestionCount = parseInt(document.getElementById('question-count').value);
-            timeLimit = selectedQuestionCount * 1.8 * 60; // 1問あたり1.8分
             
-            // 問題をシャッフルして選択
-            currentQuiz = shuffleArray(questionDatabase).slice(0, selectedQuestionCount);
+            if (selectedQuestionCount === 50) {
+                timeLimit = 120 * 60;
+            } else {
+                timeLimit = selectedQuestionCount * 1.8 * 60;
+            }
+            
+            currentQuiz = shuffleArray(questionDatabase).slice(0, Math.min(selectedQuestionCount, questionDatabase.length));
             currentQuestionIndex = 0;
             userAnswers = [];
             
@@ -525,21 +533,21 @@
         }
 
         function startTimer() {
-            let timeLeft = timeLimit;
+            var timeLeft = timeLimit;
             
-            timerInterval = setInterval(() => {
+            timerInterval = setInterval(function() {
                 timeLeft--;
-                const minutes = Math.floor(timeLeft / 60);
-                const seconds = timeLeft % 60;
+                var minutes = Math.floor(timeLeft / 60);
+                var seconds = timeLeft % 60;
                 document.getElementById('timer').textContent = 
-                    `残り時間: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    '残り時間: ' + minutes.toString().padStart(2, '0') + ':' + seconds.toString().padStart(2, '0');
                 
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
+                    alert('時間切れです！解答・解説を確認してください。');
                     endQuiz();
                 }
                 
-                // 残り時間が少なくなったら警告色
                 if (timeLeft <= 300) {
                     document.getElementById('timer').style.background = 'rgba(255, 59, 48, 0.8)';
                 }
@@ -547,50 +555,47 @@
         }
 
         function displayQuestion() {
-            const question = currentQuiz[currentQuestionIndex];
+            var question = currentQuiz[currentQuestionIndex];
             document.getElementById('question-number').textContent = 
-                `問${currentQuestionIndex + 1}【${question.category}】`;
+                '問' + (currentQuestionIndex + 1) + '【' + question.category + '】';
             document.getElementById('question-text').textContent = question.question;
             
-            const choicesContainer = document.getElementById('choices');
+            var choicesContainer = document.getElementById('choices');
             choicesContainer.innerHTML = '';
             
-            question.choices.forEach((choice, index) => {
-                const li = document.createElement('li');
+            for (var i = 0; i < question.choices.length; i++) {
+                var li = document.createElement('li');
                 li.className = 'choice';
-                li.innerHTML = `
-                    <input type="radio" name="answer" value="${index}" id="choice${index}">
-                    <label for="choice${index}">${index + 1}. ${choice}</label>
-                `;
-                li.addEventListener('click', () => selectAnswer(index));
+                li.innerHTML = '<input type="radio" name="answer" value="' + i + '" id="choice' + i + '">' +
+                              '<label for="choice' + i + '">' + (i + 1) + '. ' + question.choices[i] + '</label>';
+                li.addEventListener('click', (function(index) {
+                    return function() { selectAnswer(index); };
+                })(i));
                 choicesContainer.appendChild(li);
-            });
+            }
             
             updateProgress();
             document.getElementById('next-btn').disabled = true;
         }
 
         function selectAnswer(selectedIndex) {
-            // 全ての選択肢からselectedクラスを削除
-            document.querySelectorAll('.choice').forEach(choice => {
-                choice.classList.remove('selected');
-            });
+            var choices = document.querySelectorAll('.choice');
+            for (var i = 0; i < choices.length; i++) {
+                choices[i].classList.remove('selected');
+            }
             
-            // 選択された選択肢にselectedクラスを追加
-            document.querySelectorAll('.choice')[selectedIndex].classList.add('selected');
-            document.getElementById(`choice${selectedIndex}`).checked = true;
+            choices[selectedIndex].classList.add('selected');
+            document.getElementById('choice' + selectedIndex).checked = true;
             
-            // 次へボタン有効化
             document.getElementById('next-btn').disabled = false;
             
-            // 振動フィードバック（iPhoneで対応している場合）
             if (navigator.vibrate) {
                 navigator.vibrate(50);
             }
         }
 
         function nextQuestion() {
-            const selectedAnswer = document.querySelector('input[name="answer"]:checked');
+            var selectedAnswer = document.querySelector('input[name="answer"]:checked');
             if (selectedAnswer) {
                 userAnswers[currentQuestionIndex] = parseInt(selectedAnswer.value);
             }
@@ -605,15 +610,14 @@
         }
 
         function updateProgress() {
-            const progress = ((currentQuestionIndex + 1) / currentQuiz.length) * 100;
+            var progress = ((currentQuestionIndex + 1) / currentQuiz.length) * 100;
             document.getElementById('progress-bar').style.width = progress + '%';
         }
 
         function endQuiz() {
             clearInterval(timerInterval);
             
-            // 最後の問題の回答を保存
-            const selectedAnswer = document.querySelector('input[name="answer"]:checked');
+            var selectedAnswer = document.querySelector('input[name="answer"]:checked');
             if (selectedAnswer && currentQuestionIndex < currentQuiz.length) {
                 userAnswers[currentQuestionIndex] = parseInt(selectedAnswer.value);
             }
@@ -625,49 +629,59 @@
             document.getElementById('quiz-screen').style.display = 'none';
             document.getElementById('result-screen').style.display = 'block';
             
-            let correctCount = 0;
-            currentQuiz.forEach((question, index) => {
-                if (userAnswers[index] === question.correct) {
+            var correctCount = 0;
+            for (var i = 0; i < currentQuiz.length; i++) {
+                if (userAnswers[i] === currentQuiz[i].correct) {
                     correctCount++;
                 }
-            });
+            }
             
-            const percentage = Math.round((correctCount / currentQuiz.length) * 100);
+            var percentage = Math.round((correctCount / currentQuiz.length) * 100);
             
-            document.getElementById('final-score').textContent = `${correctCount}/${currentQuiz.length}`;
-            document.getElementById('percentage').textContent = `${percentage}%`;
+            document.getElementById('final-score').textContent = correctCount + '/' + currentQuiz.length;
+            document.getElementById('percentage').textContent = percentage + '%';
             
-            let feedback = '';
-            if (percentage >= 80) {
-                feedback = '🎉 素晴らしい！合格圏内です！';
-            } else if (percentage >= 70) {
-                feedback = '📚 合格まであと一歩！';
-            } else if (percentage >= 60) {
-                feedback = '💪 基礎固めを頑張りましょう！';
+            var feedback = '';
+            if (selectedQuestionCount === 50) {
+                if (percentage >= 70) {
+                    feedback = '🎉 合格！素晴らしい結果です！';
+                } else if (percentage >= 65) {
+                    feedback = '📚 合格まであと少し！';
+                } else if (percentage >= 60) {
+                    feedback = '💪 基礎固めを頑張りましょう！';
+                } else {
+                    feedback = '📖 継続学習で必ず上達します！';
+                }
             } else {
-                feedback = '📖 継続学習で必ず上達します！';
+                if (percentage >= 80) {
+                    feedback = '🎉 素晴らしい！合格圏内です！';
+                } else if (percentage >= 70) {
+                    feedback = '📚 合格まであと一歩！';
+                } else if (percentage >= 60) {
+                    feedback = '💪 基礎固めを頑張りましょう！';
+                } else {
+                    feedback = '📖 継続学習で必ず上達します！';
+                }
             }
             document.getElementById('feedback').textContent = feedback;
             
-            // 解答レビュー表示
-            const reviewContainer = document.getElementById('answer-review');
+            var reviewContainer = document.getElementById('answer-review');
             reviewContainer.innerHTML = '';
             
-            currentQuiz.forEach((question, index) => {
-                const isCorrect = userAnswers[index] === question.correct;
-                const userChoice = userAnswers[index] !== undefined ? userAnswers[index] + 1 : '未回答';
-                const correctChoice = question.correct + 1;
+            for (var i = 0; i < currentQuiz.length; i++) {
+                var question = currentQuiz[i];
+                var isCorrect = userAnswers[i] === question.correct;
+                var userChoice = userAnswers[i] !== undefined ? (userAnswers[i] + 1) + '番' : '未回答';
+                var correctChoice = (question.correct + 1) + '番';
                 
-                const reviewDiv = document.createElement('div');
+                var reviewDiv = document.createElement('div');
                 reviewDiv.className = 'answer-review';
-                reviewDiv.innerHTML = `
-                    <h4>問${index + 1} ${isCorrect ? '<span class="correct">✅</span>' : '<span class="incorrect">❌</span>'}</h4>
-                    <p><strong>あなたの回答:</strong> ${userChoice}番</p>
-                    <p><strong>正解:</strong> ${correctChoice}番</p>
-                    <p><strong>解説:</strong> ${question.explanation}</p>
-                `;
+                reviewDiv.innerHTML = '<h4>問' + (i + 1) + ' ' + (isCorrect ? '<span class="correct">✅</span>' : '<span class="incorrect">❌</span>') + '</h4>' +
+                                     '<p><strong>あなたの回答:</strong> ' + userChoice + '</p>' +
+                                     '<p><strong>正解:</strong> ' + correctChoice + '</p>' +
+                                     '<p><strong>解説:</strong> ' + question.explanation + '</p>';
                 reviewContainer.appendChild(reviewDiv);
-            });
+            }
         }
 
         function resetQuiz() {
@@ -677,18 +691,7 @@
             document.getElementById('progress-bar').style.width = '0%';
         }
 
-        // PWA対応（ホーム画面に追加可能）
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then((registration) => {
-                        console.log('SW registered: ', registration);
-                    })
-                    .catch((registrationError) => {
-                        console.log('SW registration failed: ', registrationError);
-                    });
-            });
-        }
+        // Service Worker registration removed to prevent 404 errors
     </script>
 </body>
 </html>
