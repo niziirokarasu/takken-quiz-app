@@ -9,6 +9,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="宅建試験">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%234facfe'/%3E%3Ctext x='50' y='60' text-anchor='middle' font-size='40' fill='white'%3E🏠%3C/text%3E%3C/svg%3E">
+    
+    <!-- Firebase CDN -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
     <style>
         * {
             margin: 0;
@@ -270,10 +274,119 @@
             font-size: 1em;
         }
 
-        @media (max-height: 600px) {
-            .question-container {
-                min-height: 300px;
-            }
+        .nav-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            background: none;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tab.active {
+            background: white;
+            color: #4facfe;
+            font-weight: bold;
+            border-bottom: 3px solid #4facfe;
+        }
+
+        .nav-tab:hover {
+            background: #e9ecef;
+        }
+
+        .history-screen {
+            display: none;
+            padding: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border-left: 4px solid #4facfe;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #4facfe;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .weak-points {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .weak-point-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .weak-point-item:last-child {
+            border-bottom: none;
+        }
+
+        .progress-mini {
+            width: 100px;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-mini-bar {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .sync-status {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 0.9em;
+        }
+
+        .sync-status.online {
+            background: #e8f5e8;
+            color: #2e7d32;
         }
     </style>
 </head>
@@ -289,6 +402,14 @@
                 <div class="progress-bar" id="progress-bar"></div>
             </div>
         </div>
+
+        <!-- ナビゲーションタブ -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('home')">🏠 ホーム</button>
+            <button class="nav-tab" onclick="showTab('history')">📊 学習履歴</button>
+        </div>
+
+        <!-- ホーム画面 -->
 
         <div id="start-screen" class="start-screen">
             <h2>📚 宅建模擬試験</h2>
@@ -351,9 +472,77 @@
 
             <button class="btn" onclick="resetQuiz()">🔄 もう一度挑戦</button>
         </div>
+
+        <!-- 学習履歴画面 -->
+        <div id="history-screen" class="history-screen">
+            <div class="sync-status" id="sync-status">
+                🔄 データ同期中...
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-attempts">0</div>
+                    <div class="stat-label">受験回数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="average-score">0%</div>
+                    <div class="stat-label">平均正答率</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="best-score">0%</div>
+                    <div class="stat-label">最高得点</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="study-time">0h</div>
+                    <div class="stat-label">累計学習時間</div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h3>📈 正答率推移</h3>
+                <div id="score-chart">グラフがここに表示されます</div>
+            </div>
+
+            <div class="weak-points">
+                <h3>🎯 弱点分野分析</h3>
+                <div id="weak-points-list">
+                    データを収集中...
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
+        // Firebase設定
+        var firebaseConfig = {
+            apiKey: "demo-api-key",
+            authDomain: "takken-quiz-demo.firebaseapp.com",
+            projectId: "takken-quiz-demo",
+            storageBucket: "takken-quiz-demo.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "demo-app-id"
+        };
+
+        // Firebase初期化
+        if (typeof firebase !== 'undefined') {
+            try {
+                firebase.initializeApp(firebaseConfig);
+                var db = firebase.firestore();
+                var isFirebaseReady = true;
+            } catch (error) {
+                console.log('Firebase初期化エラー:', error);
+                var isFirebaseReady = false;
+            }
+        } else {
+            var isFirebaseReady = false;
+        }
+
+        // ユーザーID生成（デバイス固有）
+        var userId = localStorage.getItem('takkenUserId');
+        if (!userId) {
+            userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('takkenUserId', userId);
+        }
         var questionDatabase = [
             {
                 id: 1,
@@ -1178,13 +1367,13 @@
                 wrongAnswers: wrongAnswers
             };
             
-            // 過去の結果と合わせて保存
+            // 学習データをFirebaseに保存
+            saveResultToFirebase(resultData);
+            
+            // 過去の結果と合わせてローカルにも保存（オフライン対応）
             var allResults = JSON.parse(localStorage.getItem('takkenResults') || '[]');
             allResults.push(resultData);
             localStorage.setItem('takkenResults', JSON.stringify(allResults));
-            
-            // 弱点分析データも更新
-            updateWeakPointsData(wrongAnswers);
             
             document.getElementById('final-score').textContent = correctCount + '/' + currentQuiz.length;
             document.getElementById('percentage').textContent = percentage + '%';
@@ -1245,28 +1434,164 @@
             }
         }
 
-        // 弱点分析データの更新
-        function updateWeakPointsData(wrongAnswers) {
-            var weakPoints = JSON.parse(localStorage.getItem('takkenWeakPoints') || '{}');
-            
-            for (var i = 0; i < wrongAnswers.length; i++) {
-                var wrong = wrongAnswers[i];
-                var category = wrong.category;
-                
-                if (!weakPoints[category]) {
-                    weakPoints[category] = {
-                        count: 0,
-                        questionIds: []
-                    };
-                }
-                
-                weakPoints[category].count++;
-                if (weakPoints[category].questionIds.indexOf(wrong.questionId) === -1) {
-                    weakPoints[category].questionIds.push(wrong.questionId);
+        // 学習データをFirebaseに保存
+        function saveResultToFirebase(resultData) {
+            if (!isFirebaseReady) {
+                // Firebaseが使えない場合はlocalStorageに保存
+                var allResults = JSON.parse(localStorage.getItem('takkenResults') || '[]');
+                allResults.push(resultData);
+                localStorage.setItem('takkenResults', JSON.stringify(allResults));
+                return;
+            }
+
+            try {
+                db.collection('users').doc(userId).collection('results').add(resultData)
+                    .then(function(docRef) {
+                        console.log('結果を保存しました:', docRef.id);
+                        updateSyncStatus('online');
+                    })
+                    .catch(function(error) {
+                        console.error('保存エラー:', error);
+                        // エラー時はlocalStorageにフォールバック
+                        var allResults = JSON.parse(localStorage.getItem('takkenResults') || '[]');
+                        allResults.push(resultData);
+                        localStorage.setItem('takkenResults', JSON.stringify(allResults));
+                    });
+            } catch (error) {
+                console.error('Firebase操作エラー:', error);
+            }
+        }
+
+        // Firebaseから学習履歴を取得
+        function loadHistoryFromFirebase() {
+            if (!isFirebaseReady) {
+                loadHistoryFromLocalStorage();
+                return;
+            }
+
+            try {
+                db.collection('users').doc(userId).collection('results')
+                    .orderBy('timestamp', 'desc')
+                    .limit(50)
+                    .get()
+                    .then(function(querySnapshot) {
+                        var results = [];
+                        querySnapshot.forEach(function(doc) {
+                            results.push(doc.data());
+                        });
+                        displayHistory(results);
+                        updateSyncStatus('online');
+                    })
+                    .catch(function(error) {
+                        console.error('履歴取得エラー:', error);
+                        loadHistoryFromLocalStorage();
+                    });
+            } catch (error) {
+                console.error('Firebase操作エラー:', error);
+                loadHistoryFromLocalStorage();
+            }
+        }
+
+        // localStorageから履歴を読み込み（フォールバック）
+        function loadHistoryFromLocalStorage() {
+            var results = JSON.parse(localStorage.getItem('takkenResults') || '[]');
+            displayHistory(results);
+            updateSyncStatus('offline');
+        }
+
+        // 同期状況の更新
+        function updateSyncStatus(status) {
+            var statusEl = document.getElementById('sync-status');
+            if (status === 'online') {
+                statusEl.className = 'sync-status online';
+                statusEl.textContent = '✅ クラウド同期済み';
+            } else {
+                statusEl.className = 'sync-status';
+                statusEl.textContent = '📱 ローカル保存中（接続時に同期）';
+            }
+        }
+
+        // タブ切り替え
+        function showTab(tabName) {
+            // タブボタンの状態更新
+            var tabs = document.querySelectorAll('.nav-tab');
+            for (var i = 0; i < tabs.length; i++) {
+                tabs[i].classList.remove('active');
+            }
+            event.target.classList.add('active');
+
+            // 画面の切り替え
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('quiz-screen').style.display = 'none';
+            document.getElementById('result-screen').style.display = 'none';
+            document.getElementById('history-screen').style.display = 'none';
+
+            if (tabName === 'home') {
+                document.getElementById('start-screen').style.display = 'block';
+            } else if (tabName === 'history') {
+                document.getElementById('history-screen').style.display = 'block';
+                loadHistoryFromFirebase();
+            }
+        }
+
+        // 履歴表示
+        function displayHistory(results) {
+            if (results.length === 0) {
+                document.getElementById('weak-points-list').innerHTML = '学習データがありません。試験を受けてみましょう！';
+                return;
+            }
+
+            // 統計計算
+            var totalAttempts = results.length;
+            var totalScore = 0;
+            var bestScore = 0;
+            var totalTime = 0;
+            var weakCategories = {};
+
+            for (var i = 0; i < results.length; i++) {
+                var result = results[i];
+                totalScore += result.percentage || 0;
+                bestScore = Math.max(bestScore, result.percentage || 0);
+                totalTime += result.timeSpent || 0;
+
+                // 弱点分析
+                if (result.wrongAnswers) {
+                    for (var j = 0; j < result.wrongAnswers.length; j++) {
+                        var wrong = result.wrongAnswers[j];
+                        var category = wrong.category || '不明';
+                        weakCategories[category] = (weakCategories[category] || 0) + 1;
+                    }
                 }
             }
-            
-            localStorage.setItem('takkenWeakPoints', JSON.stringify(weakPoints));
+
+            var averageScore = Math.round(totalScore / totalAttempts);
+
+            // 統計表示
+            document.getElementById('total-attempts').textContent = totalAttempts;
+            document.getElementById('average-score').textContent = averageScore + '%';
+            document.getElementById('best-score').textContent = bestScore + '%';
+            document.getElementById('study-time').textContent = Math.round(totalTime / 3600) + 'h';
+
+            // 弱点分野表示
+            var weakPointsHtml = '';
+            var sortedWeakPoints = Object.keys(weakCategories).sort(function(a, b) {
+                return weakCategories[b] - weakCategories[a];
+            });
+
+            for (var i = 0; i < Math.min(5, sortedWeakPoints.length); i++) {
+                var category = sortedWeakPoints[i];
+                var count = weakCategories[category];
+                var percentage = Math.round((count / totalAttempts) * 100);
+                
+                weakPointsHtml += '<div class="weak-point-item">' +
+                    '<span>' + category + ' (' + count + '回間違い)</span>' +
+                    '<div class="progress-mini">' +
+                        '<div class="progress-mini-bar" style="width: ' + percentage + '%; background: #ff6b6b;"></div>' +
+                    '</div>' +
+                '</div>';
+            }
+
+            document.getElementById('weak-points-list').innerHTML = weakPointsHtml || '弱点データがありません';
         }
 
         // 詳細解説を取得する関数
