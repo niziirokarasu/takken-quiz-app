@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>宅建模擬試験</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="宅建試験">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%234facfe'/%3E%3Ctext x='50' y='60' text-anchor='middle' font-size='40' fill='white'%3E🏠%3C/text%3E%3C/svg%3E">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 375px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+            min-height: calc(100vh - 20px);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+
+        .timer {
+            background: rgba(255,255,255,0.2);
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .progress-container {
+            padding: 0 20px 10px;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .progress {
+            background: rgba(255,255,255,0.3);
+            height: 6px;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            background: white;
+            height: 100%;
+            transition: width 0.3s ease;
+            border-radius: 3px;
+        }
+
+        .question-container {
+            padding: 20px;
+            min-height: 400px;
+        }
+
+        .question-number {
+            background: #f0f8ff;
+            color: #4facfe;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+
+        .question-text {
+            font-size: 1.1em;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+
+        .choices {
+            list-style: none;
+        }
+
+        .choice {
+            margin-bottom: 15px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .choice.selected {
+            border-color: #4facfe;
+            background: #e3f2fd;
+        }
+
+        .choice label {
+            display: block;
+            padding: 15px;
+            cursor: pointer;
+            font-size: 1.05em;
+            line-height: 1.5;
+        }
+
+        .choice input[type="radio"] {
+            display: none;
+        }
+
+        .choice:active {
+            transform: scale(0.98);
+        }
+
+        .controls {
+            padding: 20px;
+            border-top: 1px solid #e9ecef;
+            background: #f8f9fa;
+        }
+
+        .btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn.secondary {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+        }
+
+        .result-screen {
+            display: none;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .score-display {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+        }
+
+        .score-number {
+            font-size: 3em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .feedback {
+            font-size: 1.2em;
+            margin-top: 15px;
+        }
+
+        .answer-review {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 15px;
+            margin: 10px 0;
+            text-align: left;
+        }
+
+        .answer-review h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .correct { color: #28a745; }
+        .incorrect { color: #dc3545; }
+
+        .start-screen {
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .start-screen h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .start-screen p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .settings {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .setting-item {
+            margin-bottom: 15px;
+        }
+
+        .setting-item label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .setting-item select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+
+        @media (max-height: 600px) {
+            .question-container {
+                min-height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏠 宅建模擬試験</h1>
+            <div class="timer" id="timer">制限時間: --:--</div>
+        </div>
+
+        <div class="progress-container">
+            <div class="progress">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+        </div>
+
+        <!-- スタート画面 -->
+        <div id="start-screen" class="start-screen">
+            <h2>📚 宅建模擬試験</h2>
+            <p>2025年度試験対応<br>権利関係・宅建業法・都市計画法を中心とした実戦的な問題で学習しましょう</p>
+            
+            <div class="settings">
+                <div class="setting-item">
+                    <label for="question-count">問題数</label>
+                    <select id="question-count">
+                        <option value="5">5問（約9分）</option>
+                        <option value="10">10問（約18分）</option>
+                        <option value="20" selected>20問（約35分）</option>
+                    </select>
+                </div>
+                
+                <div class="setting-item">
+                    <label for="question-type">出題分野</label>
+                    <select id="question-type">
+                        <option value="mixed" selected>全分野ミックス</option>
+                        <option value="minpo">民法中心</option>
+                        <option value="takken">宅建業法中心</option>
+                        <option value="toshikeikaku">都市計画法中心</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button class="btn" onclick="startQuiz()">📝 試験開始</button>
+        </div>
+
+        <!-- 問題画面 -->
+        <div id="quiz-screen" style="display: none;">
+            <div class="question-container">
+                <div class="question-number" id="question-number">問1</div>
+                <div class="question-text" id="question-text">問題文がここに表示されます</div>
+                <ul class="choices" id="choices"></ul>
+            </div>
+
+            <div class="controls">
+                <button class="btn" id="next-btn" onclick="nextQuestion()" disabled>次の問題へ</button>
+                <button class="btn secondary" onclick="endQuiz()">試験終了</button>
+            </div>
+        </div>
+
+        <!-- 結果画面 -->
+        <div id="result-screen" class="result-screen">
+            <div class="score-display">
+                <h2>📊 試験結果</h2>
+                <div class="score-number" id="final-score">0/0</div>
+                <div id="percentage">0%</div>
+                <div class="feedback" id="feedback">頑張りましょう！</div>
+            </div>
+
+            <div id="answer-review"></div>
+
+            <button class="btn" onclick="resetQuiz()">🔄 もう一度挑戦</button>
+        </div>
+    </div>
+
+    <script>
+        // 問題データベース（実際のアプリではもっと多くの問題を含める）
+        const questionDatabase = [
+            {
+                id: 1,
+                category: "民法・物権変動",
+                question: "AがBに土地を売却し、BがCに転売した場合について正しいものはどれか。",
+                choices: [
+                    "Bが登記を受けていない場合、CはAに所有権を主張できない",
+                    "AB間契約が無効でも、Cが善意無過失なら所有権を取得する",
+                    "Cが登記を受けた後なら、AB間契約が取り消されてもCの権利に影響しない",
+                    "Bが代金未払いの場合、Cが代金支払い義務を承継する"
+                ],
+                correct: 2,
+                explanation: "民法94条2項の類推適用により、善意のCは保護されます。"
+            },
+            {
+                id: 2,
+                category: "宅建業法・重要事項説明",
+                question: "重要事項説明に関して正しいものはどれか。",
+                choices: [
+                    "契約成立後でも相手方の同意があれば説明できる",
+                    "宅建士以外でも説明することができる",
+                    "契約締結前に説明し、書面を交付しなければならない",
+                    "口頭での説明のみで書面交付は不要"
+                ],
+                correct: 2,
+                explanation: "35条により、契約締結前の説明と書面交付が義務付けられています。"
+            },
+            {
+                id: 3,
+                category: "宅建業法・8つの制限",
+                question: "損害賠償の予定額について正しいものはどれか。",
+                choices: [
+                    "代金額の30%まで予定できる",
+                    "違約金と合算して代金額の20%以下でなければならない",
+                    "損害賠償の予定のみなら代金額の50%まで可能",
+                    "違約金とは別に代金額の20%まで予定できる"
+                ],
+                correct: 1,
+                explanation: "損害賠償予定額と違約金は合算して代金額の20%以下でなければなりません。"
+            },
+            {
+                id: 4,
+                category: "都市計画法・開発行為",
+                question: "開発行為について正しいものはどれか。",
+                choices: [
+                    "市街化区域内では1000㎡以上で開発許可が必要",
+                    "開発工事完了前でも建築工事を開始できる",
+                    "工事完了公告がされるまで建築してはならない",
+                    "市街化調整区域では面積に関係なく許可不要"
+                ],
+                correct: 2,
+                explanation: "工事完了公告により建築可能な宅地が完成してから建築工事が可能です。"
+            },
+            {
+                id: 5,
+                category: "借地借家法・定期借地権",
+                question: "事業用定期借地権について正しいものはどれか。",
+                choices: [
+                    "存続期間に制限はない",
+                    "居住用建物も建築できる",
+                    "居住の用に供する建物を建築してはならない",
+                    "普通の書面契約で足りる"
+                ],
+                correct: 2,
+                explanation: "事業用定期借地権は居住用建物の建築が禁止されています。"
+            },
+            {
+                id: 6,
+                category: "民法・契約不適合責任",
+                question: "契約不適合責任について正しいものはどれか。",
+                choices: [
+                    "買主は不適合を知った時から1年以内に通知が必要",
+                    "売主悪意の場合も1年以内に通知が必要",
+                    "追完請求なしに直ちに解除できる",
+                    "損害賠償と解除は併用できない"
+                ],
+                correct: 0,
+                explanation: "買主は不適合を知った時から1年以内の通知が必要ですが、売主悪意の場合は例外です。"
+            },
+            {
+                id: 7,
+                category: "宅建業法・免許制度",
+                question: "免許換えについて正しいものはどれか。",
+                choices: [
+                    "新旧両方の免許を並行して保有できる",
+                    "事業を一時停止する必要がある",
+                    "新免許取得後、旧免許は効力を失う",
+                    "免許番号は引き継がれる"
+                ],
+                correct: 2,
+                explanation: "免許換えでは新免許取得と同時に旧免許は効力を失います。"
+            },
+            {
+                id: 8,
+                category: "民法・時効",
+                question: "取得時効について正しいものはどれか。",
+                choices: [
+                    "善意無過失なら10年、その他は20年で取得",
+                    "占有開始時の善意無過失で判断される",
+                    "盗品は善意でも時効取得できない",
+                    "所有の意思は不要"
+                ],
+                correct: 1,
+                explanation: "取得時効は占有開始時の善意無過失で期間が決まります。"
+            },
+            {
+                id: 9,
+                category: "宅建業法・仲介手数料",
+                question: "賃貸仲介の報酬について正しいものはどれか。",
+                choices: [
+                    "貸主借主それぞれから1ヶ月分受領できる",
+                    "双方から受領する場合は合計で賃料1.1ヶ月分以内",
+                    "借主承諾があれば借主から1.1ヶ月分受領できる",
+                    "報酬に上限はない"
+                ],
+                correct: 1,
+                explanation: "賃貸仲介では双方合計で賃料1.1ヶ月分（税込）が上限です。"
+            },
+            {
+                id: 10,
+                category: "民法・代理",
+                question: "代理について正しいものはどれか。",
+                choices: [
+                    "本人が行為能力者なら代理人は未成年者でもよい",
+                    "復代理人選任には本人の許可が必要",
+                    "表見代理では本人は効果を否認できる",
+                    "無権代理人の相続で必ず有効になる"
+                ],
+                correct: 0,
+                explanation: "代理人の行為能力は問題となりません。本人が行為能力者であれば代理人は未成年者でも構いません。"
+            },
+            // さらに問題を追加...
+            {
+                id: 11,
+                category: "都市計画法・用途地域",
+                question: "第一種低層住居専用地域について正しいものはどれか。",
+                choices: [
+                    "コンビニエンスストアを建築できる",
+                    "小規模な事務所は建築できる",
+                    "住宅、小学校、診療所などが建築できる",
+                    "ファミリーレストランを建築できる"
+                ],
+                correct: 2,
+                explanation: "第一種低層住居専用地域では住宅、小学校、診療所などの建築が可能です。"
+            },
+            {
+                id: 12,
+                category: "宅建業法・37条書面",
+                question: "37条書面について正しいものはどれか。",
+                choices: [
+                    "契約成立前に交付する",
+                    "宅建士の記名押印は不要",
+                    "契約成立後遅滞なく交付する",
+                    "口頭での説明で代替できる"
+                ],
+                correct: 2,
+                explanation: "37条書面は契約成立後遅滞なく交付し、宅建士の記名押印が必要です。"
+            }
+        ];
+
+        let currentQuiz = [];
+        let currentQuestionIndex = 0;
+        let userAnswers = [];
+        let startTime;
+        let timerInterval;
+        let selectedQuestionCount = 20;
+        let timeLimit;
+
+        function shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        function startQuiz() {
+            selectedQuestionCount = parseInt(document.getElementById('question-count').value);
+            timeLimit = selectedQuestionCount * 1.8 * 60; // 1問あたり1.8分
+            
+            // 問題をシャッフルして選択
+            currentQuiz = shuffleArray(questionDatabase).slice(0, selectedQuestionCount);
+            currentQuestionIndex = 0;
+            userAnswers = [];
+            
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('quiz-screen').style.display = 'block';
+            document.getElementById('result-screen').style.display = 'none';
+            
+            startTime = Date.now();
+            startTimer();
+            displayQuestion();
+        }
+
+        function startTimer() {
+            let timeLeft = timeLimit;
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                document.getElementById('timer').textContent = 
+                    `残り時間: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    endQuiz();
+                }
+                
+                // 残り時間が少なくなったら警告色
+                if (timeLeft <= 300) {
+                    document.getElementById('timer').style.background = 'rgba(255, 59, 48, 0.8)';
+                }
+            }, 1000);
+        }
+
+        function displayQuestion() {
+            const question = currentQuiz[currentQuestionIndex];
+            document.getElementById('question-number').textContent = 
+                `問${currentQuestionIndex + 1}【${question.category}】`;
+            document.getElementById('question-text').textContent = question.question;
+            
+            const choicesContainer = document.getElementById('choices');
+            choicesContainer.innerHTML = '';
+            
+            question.choices.forEach((choice, index) => {
+                const li = document.createElement('li');
+                li.className = 'choice';
+                li.innerHTML = `
+                    <input type="radio" name="answer" value="${index}" id="choice${index}">
+                    <label for="choice${index}">${index + 1}. ${choice}</label>
+                `;
+                li.addEventListener('click', () => selectAnswer(index));
+                choicesContainer.appendChild(li);
+            });
+            
+            updateProgress();
+            document.getElementById('next-btn').disabled = true;
+        }
+
+        function selectAnswer(selectedIndex) {
+            // 全ての選択肢からselectedクラスを削除
+            document.querySelectorAll('.choice').forEach(choice => {
+                choice.classList.remove('selected');
+            });
+            
+            // 選択された選択肢にselectedクラスを追加
+            document.querySelectorAll('.choice')[selectedIndex].classList.add('selected');
+            document.getElementById(`choice${selectedIndex}`).checked = true;
+            
+            // 次へボタン有効化
+            document.getElementById('next-btn').disabled = false;
+            
+            // 振動フィードバック（iPhoneで対応している場合）
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
+        }
+
+        function nextQuestion() {
+            const selectedAnswer = document.querySelector('input[name="answer"]:checked');
+            if (selectedAnswer) {
+                userAnswers[currentQuestionIndex] = parseInt(selectedAnswer.value);
+            }
+            
+            currentQuestionIndex++;
+            
+            if (currentQuestionIndex < currentQuiz.length) {
+                displayQuestion();
+            } else {
+                endQuiz();
+            }
+        }
+
+        function updateProgress() {
+            const progress = ((currentQuestionIndex + 1) / currentQuiz.length) * 100;
+            document.getElementById('progress-bar').style.width = progress + '%';
+        }
+
+        function endQuiz() {
+            clearInterval(timerInterval);
+            
+            // 最後の問題の回答を保存
+            const selectedAnswer = document.querySelector('input[name="answer"]:checked');
+            if (selectedAnswer && currentQuestionIndex < currentQuiz.length) {
+                userAnswers[currentQuestionIndex] = parseInt(selectedAnswer.value);
+            }
+            
+            showResults();
+        }
+
+        function showResults() {
+            document.getElementById('quiz-screen').style.display = 'none';
+            document.getElementById('result-screen').style.display = 'block';
+            
+            let correctCount = 0;
+            currentQuiz.forEach((question, index) => {
+                if (userAnswers[index] === question.correct) {
+                    correctCount++;
+                }
+            });
+            
+            const percentage = Math.round((correctCount / currentQuiz.length) * 100);
+            
+            document.getElementById('final-score').textContent = `${correctCount}/${currentQuiz.length}`;
+            document.getElementById('percentage').textContent = `${percentage}%`;
+            
+            let feedback = '';
+            if (percentage >= 80) {
+                feedback = '🎉 素晴らしい！合格圏内です！';
+            } else if (percentage >= 70) {
+                feedback = '📚 合格まであと一歩！';
+            } else if (percentage >= 60) {
+                feedback = '💪 基礎固めを頑張りましょう！';
+            } else {
+                feedback = '📖 継続学習で必ず上達します！';
+            }
+            document.getElementById('feedback').textContent = feedback;
+            
+            // 解答レビュー表示
+            const reviewContainer = document.getElementById('answer-review');
+            reviewContainer.innerHTML = '';
+            
+            currentQuiz.forEach((question, index) => {
+                const isCorrect = userAnswers[index] === question.correct;
+                const userChoice = userAnswers[index] !== undefined ? userAnswers[index] + 1 : '未回答';
+                const correctChoice = question.correct + 1;
+                
+                const reviewDiv = document.createElement('div');
+                reviewDiv.className = 'answer-review';
+                reviewDiv.innerHTML = `
+                    <h4>問${index + 1} ${isCorrect ? '<span class="correct">✅</span>' : '<span class="incorrect">❌</span>'}</h4>
+                    <p><strong>あなたの回答:</strong> ${userChoice}番</p>
+                    <p><strong>正解:</strong> ${correctChoice}番</p>
+                    <p><strong>解説:</strong> ${question.explanation}</p>
+                `;
+                reviewContainer.appendChild(reviewDiv);
+            });
+        }
+
+        function resetQuiz() {
+            document.getElementById('result-screen').style.display = 'none';
+            document.getElementById('start-screen').style.display = 'block';
+            document.getElementById('timer').style.background = 'rgba(255,255,255,0.2)';
+            document.getElementById('progress-bar').style.width = '0%';
+        }
+
+        // PWA対応（ホーム画面に追加可能）
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then((registration) => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch((registrationError) => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
