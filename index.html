@@ -515,12 +515,13 @@
     <script>
         // Firebase設定
         var firebaseConfig = {
-            apiKey: "demo-api-key",
-            authDomain: "takken-quiz-demo.firebaseapp.com",
-            projectId: "takken-quiz-demo",
-            storageBucket: "takken-quiz-demo.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "demo-app-id"
+            apiKey: "AIzaSyDGfHCQX8qTytSEKv_-JWll0_vj6Psci5I",
+            authDomain: "takken-quiz-app-d5319.firebaseapp.com",
+            projectId: "takken-quiz-app-d5319",
+            storageBucket: "takken-quiz-app-d5319.firebasestorage.app",
+            messagingSenderId: "328522134398",
+            appId: "1:328522134398:web:e71ca705b7612120c7392f",
+            measurementId: "G-016EYQ8H8D"
         };
 
         // Firebase初期化
@@ -529,11 +530,13 @@
                 firebase.initializeApp(firebaseConfig);
                 var db = firebase.firestore();
                 var isFirebaseReady = true;
+                console.log('Firebase初期化成功');
             } catch (error) {
                 console.log('Firebase初期化エラー:', error);
                 var isFirebaseReady = false;
             }
         } else {
+            console.log('Firebase SDK未読み込み');
             var isFirebaseReady = false;
         }
 
